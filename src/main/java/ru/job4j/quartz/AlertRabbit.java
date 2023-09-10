@@ -10,11 +10,17 @@ import java.time.LocalDateTime;
 import java.util.Properties;
 
 import static org.quartz.JobBuilder.*;
+import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.*;
 
 public class AlertRabbit {
+    Properties prop;
 
-    public Properties getSettings() {
+    public AlertRabbit() {
+        prop = getSettings();
+    }
+
+    private Properties getSettings() {
         Properties properties = new Properties();
         try (InputStream in = AlertRabbit.class.getClassLoader().getResourceAsStream("rabbit.properties")) {
             properties.load(in);
@@ -25,14 +31,15 @@ public class AlertRabbit {
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
-        Properties prop = new AlertRabbit().getSettings();
-        Class.forName(prop.getProperty("driver-class-name"));
+         AlertRabbit ar = new AlertRabbit();
+        Class.forName(ar.prop.getProperty("driver-class-name"));
         try (Connection cnt = DriverManager.getConnection(
-                prop.getProperty("url"),
-                prop.getProperty("username"),
-                prop.getProperty("password")
+                ar.prop.getProperty("url"),
+                ar.prop.getProperty("username"),
+                ar.prop.getProperty("password")
         ); Statement statement = cnt.createStatement()) {
-                statement.execute("CREATE TABLE IF NOT EXISTS rabbit(created_date timestamp);");
+                statement.execute("DROP TABLE IF EXISTS rabbit;"
+                        + "CREATE TABLE IF NOT EXISTS rabbit(created_date timestamp);");
 
             Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
             scheduler.start();
@@ -41,8 +48,12 @@ public class AlertRabbit {
             JobDetail job = newJob(Rabbit.class)
                     .usingJobData(data)
                     .build();
+            SimpleScheduleBuilder times = simpleSchedule()
+                    .withIntervalInSeconds(5)
+                    .repeatForever();
             Trigger trigger = newTrigger()
                     .startNow()
+                    .withSchedule(times)
                     .build();
             scheduler.scheduleJob(job, trigger);
             Thread.sleep(10000);
