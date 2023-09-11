@@ -18,14 +18,7 @@ public class HabrCareerParse {
 
     private String retrieveDescription(String link) {
         final String[] result = new String[1];
-        Connection connection = Jsoup.connect(link);
-        Document document = null;
-        try {
-            document = connection.get();
-        } catch (IOException e) {
-            System.out.printf("Invalid link %s%n", link);
-        }
-        assert document != null;
+        Document document = getDocument(link);
         Elements rows = document.select(".basic-section--appearance-vacancy-description");
         rows.forEach(row -> {
             Element titleElement = row.select(".basic-section--appearance-vacancy-description > h2:nth-child(1)").first();
@@ -35,6 +28,18 @@ public class HabrCareerParse {
             result[0] = String.format("%s%n%s%n", titleName, discrName);
         });
         return result[0];
+    }
+
+    private static Document getDocument(String link) {
+        Connection connection = Jsoup.connect(link);
+        Document document = null;
+        try {
+            document = connection.get();
+        } catch (IOException e) {
+            System.out.printf("Invalid link %s%n", link);
+        }
+        assert document != null;
+        return document;
     }
 
     public static void main(String[] args) throws IOException {
@@ -50,7 +55,7 @@ public class HabrCareerParse {
                 String link = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
                 LocalDate date = LocalDate.parse(dateElement.attr("datetime"), DateTimeFormatter.ISO_DATE_TIME);
                 String rd = new HabrCareerParse().retrieveDescription(link);
-                System.out.printf("%s%n%s%n%s%n%n", date, vacancyName, rd);
+                System.out.printf("%s%n%s%n%s%n%s%n%n", date, link, vacancyName, rd);
             });
         }
     }
