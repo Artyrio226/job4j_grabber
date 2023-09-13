@@ -1,7 +1,5 @@
 package ru.job4j.grabber;
 
-import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
@@ -14,21 +12,21 @@ public class PsqlStore implements Store {
     private Connection cnn;
 
     public PsqlStore(Properties cfg) {
-        try (InputStream in = PsqlStore.class.getClassLoader().getResourceAsStream("post.properties")) {
+        try (InputStream in = PsqlStore.class.getClassLoader().getResourceAsStream("app.properties")) {
             cfg.load(in);
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            Class.forName(cfg.getProperty("jdbc.driver"));
+            Class.forName(cfg.getProperty("driver"));
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
         try {
             cnn = DriverManager.getConnection(
-                    cfg.getProperty("jdbc.url"),
-                    cfg.getProperty("jdbc.username"),
-                    cfg.getProperty("jdbc.password")
+                    cfg.getProperty("url"),
+                    cfg.getProperty("username"),
+                    cfg.getProperty("password")
             );
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -102,17 +100,6 @@ public class PsqlStore implements Store {
     public void close() throws Exception {
         if (cnn != null) {
             cnn.close();
-        }
-    }
-
-    public static void main(String[] args) throws Exception {
-        try (var ps = new PsqlStore(new Properties())) {
-            Post post = new Post(1, "Прогер", "Нужно дебажить",
-                    "https://career.habr.com/vacancies/1000121931",
-                    new HabrCareerDateTimeParser().parse("2023-09-10T14:27:21"));
-            ps.save(post);
-            System.out.println(ps.findById(1));
-            System.out.println(ps.getAll());
         }
     }
 }
